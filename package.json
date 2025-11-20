@@ -1,0 +1,24 @@
+{
+  "name": "hardhat-defi",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "ci": "biome ci",
+    "lint": "biome check",
+    "format": "biome check --write"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.4",
+    "@nomicfoundation/hardhat-ignition": "^3.0.8",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.2",
+    "@types/node": "^25.3.3",
+    "forge-std": "github:foundry-rs/forge-std#v1.15.0",
+    "hardhat": "^3.1.10",
+    "typescript": "^5.9.3",
+    "viem": "^2.46.3"
+  },
+  "packageManager": "pnpm@10.30.3",
+  "engines": {
+    "node": ">=24"
+  }
+}
