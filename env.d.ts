@@ -11,6 +11,8 @@ declare global {
       MAINNET_RPC_URL: string;
       MAINNET_WETH_CONTRACT_ADDRESS: string;
       MAINNET_AAVE_POOL_ADDRESS_PROVIDER_ADDRESS: string;
+      MAINNET_DAI_ETH_PRICE_FEED_ADDRESS: string;
+      MAINNET_ETH_USD_PRICE_FEED_ADDRESS: string;
     }
   }
 }
