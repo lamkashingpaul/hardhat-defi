@@ -1,10 +1,10 @@
-import hre from "hardhat";
+import type { NetworkConnection } from "hardhat/types/network";
 import { type Address, parseEther } from "viem";
 
-const AMOUNT = parseEther("0.02");
+export const AMOUNT = parseEther("0.02");
 
-export const getWeth = async () => {
-  const { viem } = await hre.network.connect();
+export const getWeth = async (connection: NetworkConnection) => {
+  const { viem } = connection;
   const publicClient = await viem.getPublicClient();
   const [walletClient] = await viem.getWalletClients();
   const walletAddress = walletClient.account.address;

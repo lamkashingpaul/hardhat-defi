@@ -1,9 +1,11 @@
 import "dotenv/config";
 import hardhatToolboxViem from "@nomicfoundation/hardhat-toolbox-viem";
 import { defineConfig } from "hardhat/config";
+import type { Address } from "viem";
 
-const sepoliaRpcUrl = process.env.SEPOLIA_RPC_URL;
-const sepoliaPrivateKey = process.env.SEPOLIA_PRIVATE_KEY;
+const sepoliaRpcUrl = process.env.SEPOLIA_RPC_URL as Address;
+const sepoliaPrivateKey = process.env.SEPOLIA_PRIVATE_KEY as Address;
+const mainnetRpcUrl = process.env.MAINNET_RPC_URL as Address;
 
 export default defineConfig({
   plugins: [hardhatToolboxViem],
@@ -23,6 +25,12 @@ export default defineConfig({
     hardhatOp: {
       type: "edr-simulated",
       chainType: "op",
+    },
+    mainnetFork: {
+      type: "edr-simulated",
+      forking: {
+        url: mainnetRpcUrl,
+      },
     },
     sepolia: {
       type: "http",
