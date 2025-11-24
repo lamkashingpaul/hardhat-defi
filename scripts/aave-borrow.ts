@@ -7,6 +7,9 @@ import type { NetworkConnection } from "hardhat/types/network";
 import { type Address, formatUnits } from "viem";
 import { AMOUNT, getWeth } from "./get-weth.js";
 
+const DAI_DECIMALS = 18;
+const AAVE_BASE_DECIMALS = 8;
+
 const main = async () => {
   const connection = await hre.network.connect();
   const { viem } = connection;
@@ -34,34 +37,103 @@ const main = async () => {
   ]);
   console.log(`Deposited WETH into Aave!`);
 
-  const { totalCollateralBase, availableBorrowsBase, totalDebtBase } =
-    await getBorrowUserData(poolContract, walletClient.account.address);
+  const { availableBorrowsBase } = await getBorrowUserData(
+    poolContract,
+    walletClient.account.address,
+  );
   const { ethUsdPrice, decimalsForEthUsdPrice } =
     await getEthUsdPrice(connection);
   const { daiEthPrice, decimalsForDaiEthPrice } =
     await getDaiEthPrice(connection);
 
-  // Calculate USD/DAI rate: (USD/ETH) * (ETH/DAI) = USD/DAI
+  // Calculate USD/DAI rate: (USD/ETH) * (ETH/DAI) = USD/DAI = 1 / (DAI/USD)
   // Price has decimalsForEthUsdPrice + decimalsForDaiEthPrice decimals
-  const usdPerDai = ethUsdPrice * daiEthPrice;
+  const daiUsdPrice = ethUsdPrice * daiEthPrice;
 
   // Convert availableBorrowsBase (USD with 8 decimals) to DAI (with 18 decimals)
   // Formula: (amount * 10^X) / price, where X makes the decimals work out
   // Input: 8 decimals, Price: (decimalsForEthUsdPrice + decimalsForDaiEthPrice) decimals, Output: 18 decimals
   // 8 + X - (decimalsForEthUsdPrice + decimalsForDaiEthPrice) = 18
   // X = 10 + decimalsForEthUsdPrice + decimalsForDaiEthPrice
-  const DAI_DECIMALS = 18;
-  const AAVE_BASE_DECIMALS = 8;
   const decimalAdjustment = BigInt(
     DAI_DECIMALS +
+      AAVE_BASE_DECIMALS -
       decimalsForEthUsdPrice +
-      decimalsForDaiEthPrice -
-      AAVE_BASE_DECIMALS,
+      decimalsForDaiEthPrice,
   );
   const daiAmountToBorrow =
-    (availableBorrowsBase * 10n ** decimalAdjustment) / usdPerDai;
+    (availableBorrowsBase * 10n ** decimalAdjustment) / daiUsdPrice;
 
-  console.log(`Available to borrow: ${formatUnits(daiAmountToBorrow, 18)} DAI`);
+  console.log(
+    `Available to borrow: ${formatUnits(daiAmountToBorrow, DAI_DECIMALS)} DAI`,
+  );
+
+  await borrowDai(
+    process.env.MAINNET_DAI_CONTRACT_ADDRESS as Address,
+    poolContract,
+    daiAmountToBorrow / 2n, // Borrowing half of the available amount for safety
+    walletClient,
+    connection,
+  );
+
+  await repayDai(
+    process.env.MAINNET_DAI_CONTRACT_ADDRESS as Address,
+    poolContract,
+    daiAmountToBorrow / 2n,
+    walletClient,
+    connection,
+  );
+  await getBorrowUserData(poolContract, walletClient.account.address);
+};
+
+const repayDai = async (
+  daiAddress: Address,
+  poolContract: ContractReturnType<"IPool">,
+  amountToRepay: bigint,
+  walletClient: WalletClient,
+  connection: NetworkConnection,
+) => {
+  const { viem } = connection;
+  const publicClient = await viem.getPublicClient();
+
+  await approveErc20(
+    daiAddress,
+    poolContract.address,
+    walletClient.account.address,
+    amountToRepay,
+    connection,
+  );
+
+  console.log(`Repaying ${formatUnits(amountToRepay, DAI_DECIMALS)} DAI...`);
+  const hash = await poolContract.write.repay([
+    daiAddress,
+    amountToRepay,
+    2n,
+    walletClient.account.address,
+  ]);
+  await publicClient.waitForTransactionReceipt({ hash });
+  console.log(`Repaid ${formatUnits(amountToRepay, DAI_DECIMALS)} DAI!`);
+};
+
+const borrowDai = async (
+  daiAddress: Address,
+  poolContract: ContractReturnType<"IPool">,
+  amountToBorrow: bigint,
+  walletClient: WalletClient,
+  connection: NetworkConnection,
+) => {
+  const { viem } = connection;
+  const publicClient = await viem.getPublicClient();
+  console.log(`Borrowing ${formatUnits(amountToBorrow, DAI_DECIMALS)} DAI...`);
+  const hash = await poolContract.write.borrow([
+    daiAddress,
+    amountToBorrow,
+    2n,
+    0, // Referral code
+    walletClient.account.address,
+  ]);
+  await publicClient.waitForTransactionReceipt({ hash });
+  console.log(`Borrowed ${formatUnits(amountToBorrow, DAI_DECIMALS)} DAI!`);
 };
 
 const getEthUsdPrice = async (connection: NetworkConnection) => {
@@ -110,6 +182,7 @@ const getBorrowUserData = async (
   console.log(`Current Liquidation Threshold: ${currentLiquidationThreshold}`);
   console.log(`Loan to Value (LTV): ${ltv}`);
   console.log(`Health Factor: ${healthFactor}`);
+  console.log();
 
   return {
     totalCollateralBase,

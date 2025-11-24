@@ -8,18 +8,18 @@
     "format": "biome check --write"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.4.5",
-    "@nomicfoundation/hardhat-ignition": "^3.0.8",
-    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.2",
-    "@nomicfoundation/hardhat-viem": "^3.0.3",
-    "@types/node": "^25.3.3",
+    "@biomejs/biome": "^2.4.6",
+    "@nomicfoundation/hardhat-ignition": "^3.0.9",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.3",
+    "@nomicfoundation/hardhat-viem": "^3.0.4",
+    "@types/node": "^25.3.5",
     "dotenv": "^17.3.1",
     "forge-std": "github:foundry-rs/forge-std#v1.15.0",
-    "hardhat": "^3.1.10",
+    "hardhat": "^3.1.11",
     "typescript": "^5.9.3",
     "viem": "^2.47.0"
   },
-  "packageManager": "pnpm@10.30.3",
+  "packageManager": "pnpm@10.31.0",
   "engines": {
     "node": ">=24"
   }
